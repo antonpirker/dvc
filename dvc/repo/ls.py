@@ -4,7 +4,9 @@ from dvc.exceptions import PathMissingError
 from dvc.path_info import PathInfo
 
 
-def ls(url, path=None, rev=None, recursive=None, dvc_only=False):
+def ls(
+    url, path=None, rev=None, recursive=None, dvc_only=False, with_size=False
+):
     """Methods for getting files and outputs for the repo.
 
     Args:
@@ -13,6 +15,7 @@ def ls(url, path=None, rev=None, recursive=None, dvc_only=False):
         rev (str, optional): SHA commit, branch or tag name
         recursive (bool, optional): recursively walk the repo
         dvc_only (bool, optional): show only DVC-artifacts
+        with_size (bool, optional): include file sizes
 
     Returns:
         list of `entry`
@@ -24,6 +27,7 @@ def ls(url, path=None, rev=None, recursive=None, dvc_only=False):
             "isout": bool,
             "isdir": bool,
             "isexec": bool,
+            "size": number,
         }
     """
     from . import Repo
@@ -33,7 +37,7 @@ def ls(url, path=None, rev=None, recursive=None, dvc_only=False):
         if path:
             path_info /= path
 
-        ret = _ls(repo.repo_fs, path_info, recursive, dvc_only)
+        ret = _ls(repo, path_info, recursive, dvc_only, with_size)
 
         if path and not ret:
             raise PathMissingError(path, repo, dvc_only=dvc_only)
@@ -46,13 +50,13 @@ def ls(url, path=None, rev=None, recursive=None, dvc_only=False):
         return ret_list
 
 
-def _ls(fs, path_info, recursive=None, dvc_only=False):
+def _ls(repo, path_info, recursive=None, dvc_only=False, with_size=False):
     def onerror(exc):
         raise exc
 
     infos = []
     try:
-        for root, dirs, files in fs.walk(
+        for root, dirs, files in repo.repo_fs.walk(
             path_info.fspath, onerror=onerror, dvcfiles=True
         ):
             entries = chain(files, dirs) if not recursive else files
@@ -66,7 +70,7 @@ def _ls(fs, path_info, recursive=None, dvc_only=False):
 
     ret = {}
     for info in infos:
-        metadata = fs.metadata(info)
+        metadata = repo.repo_fs.metadata(info)
         if metadata.output_exists or not dvc_only:
             path = (
                 path_info.name
@@ -78,4 +82,11 @@ def _ls(fs, path_info, recursive=None, dvc_only=False):
                 "isdir": metadata.isdir,
                 "isexec": metadata.is_exec,
             }
+
+            if with_size:
+                try:
+                    ret[path]["size"] = repo.repo_fs.getsize(path)
+                except FileNotFoundError:
+                    ret[path]["size"] = repo.dvcfs.info(info)["size"]
+
     return ret
