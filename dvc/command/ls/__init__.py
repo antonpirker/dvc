@@ -3,23 +3,22 @@ import logging
 
 from dvc.command import completion
 from dvc.command.base import CmdBaseNoRepo, append_doc_link
-from dvc.command.ls.ls_colors import LsColors
+from dvc.command.ls.output_formatter import OutputFormatter
 from dvc.exceptions import DvcException
 from dvc.ui import ui
 
 logger = logging.getLogger(__name__)
 
 
-def _prettify(entries, with_color=False):
-    if with_color:
-        ls_colors = LsColors()
-        fmt = ls_colors.format
-    else:
-
-        def fmt(entry):
-            return entry["path"]
-
-    return [fmt(entry) for entry in entries]
+def _prettify(
+    entries, with_color=False, with_size=False, human_readable=False
+):
+    output_formatter = OutputFormatter(
+        with_color=with_color,
+        with_size=with_size,
+        human_readable=human_readable,
+    )
+    return [output_formatter.format(entry) for entry in entries]
 
 
 class CmdList(CmdBaseNoRepo):
