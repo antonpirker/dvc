@@ -10,18 +10,17 @@ from dvc.ui import ui
 logger = logging.getLogger(__name__)
 
 
-def _prettify(
-    entries, with_color=False, with_size=False, human_readable=False
-):
-    output_formatter = OutputFormatter(
-        with_color=with_color,
-        with_size=with_size,
-        human_readable=human_readable,
-    )
-    return [output_formatter.format(entry) for entry in entries]
-
-
 class CmdList(CmdBaseNoRepo):
+    def prettify_entries(
+        self, entries, with_color=False, with_size=False, human_readable=False
+    ):
+        output_formatter = OutputFormatter(
+            with_color=with_color,
+            with_size=with_size,
+            human_readable=human_readable,
+        )
+        return [output_formatter.format(entry) for entry in entries]
+
     def run(self):
         from dvc.repo import Repo
 
@@ -36,7 +35,7 @@ class CmdList(CmdBaseNoRepo):
             if self.args.json:
                 ui.write_json(entries)
             elif entries:
-                entries = _prettify(entries, with_color=True)
+                entries = self.prettify_entries(entries, with_color=True)
                 ui.write("\n".join(entries))
             return 0
         except DvcException:
