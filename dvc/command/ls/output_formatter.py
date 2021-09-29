@@ -68,9 +68,7 @@ class OutputFormatter:
             output = text
 
         if self.with_size:
-            size = entry.get(
-                "size", 0
-            )  # TODO: remove default when the size always in entry
+            size = entry.get("size")
             if self.human_readable:
                 size_string = convert_bytes(size)
                 output = f"{size_string:<8s}\t{output}"
