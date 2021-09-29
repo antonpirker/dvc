@@ -39,7 +39,9 @@ class CmdDiskUsage(CmdBaseNoRepo):
 
             if self.args.summarize:
                 total_bytes = reduce(
-                    lambda a, b: a + b, list(map(lambda a: a["size"], entries))
+                    lambda a, b: a + b,
+                    list(map(lambda a: a["size"], entries)),
+                    0,
                 )
                 if self.args.human_readable:
                     ui.write(convert_bytes(total_bytes))
