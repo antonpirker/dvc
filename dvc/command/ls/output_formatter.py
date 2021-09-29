@@ -12,7 +12,7 @@ def convert_bytes(num):
             return f"{num:.0f}{unit}"
         num /= step_unit
 
-    return num
+    return f"{num*step_unit:.0f}{unit}"
 
 
 class OutputFormatter:
@@ -73,9 +73,9 @@ class OutputFormatter:
             )  # TODO: remove default when the size always in entry
             if self.human_readable:
                 size_string = convert_bytes(size)
-                output = f"{size_string:<7s}\t{output}"
+                output = f"{size_string:<8s}\t{output}"
             else:
-                output = f"{size:<7d}\t{output}"
+                output = f"{size:<8d}\t{output}"
 
         return output
 
