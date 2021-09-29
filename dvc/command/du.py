@@ -1,9 +1,10 @@
 import argparse
 import logging
+from functools import reduce
 
 from dvc.command import completion
 from dvc.command.base import CmdBaseNoRepo, append_doc_link
-from dvc.command.ls.output_formatter import OutputFormatter
+from dvc.command.ls.output_formatter import OutputFormatter, convert_bytes
 from dvc.exceptions import DvcException
 from dvc.ui import ui
 
@@ -26,15 +27,26 @@ class CmdDiskUsage(CmdBaseNoRepo):
         from dvc.repo import Repo
 
         try:
+            recursive = True if self.args.summarize else self.args.recursive
             entries = Repo.ls(
                 self.args.url,
                 self.args.path,
                 rev=self.args.rev,
-                recursive=self.args.recursive,
+                recursive=recursive,
                 with_size=True,
                 dvc_only=self.args.dvc_only,
             )
-            if self.args.show_json:
+
+            if self.args.summarize:
+                total_bytes = reduce(
+                    lambda a, b: a + b, list(map(lambda a: a["size"], entries))
+                )
+                if self.args.human_readable:
+                    ui.write(convert_bytes(total_bytes))
+                else:
+                    ui.write(total_bytes)
+
+            elif self.args.show_json:
                 import json
 
                 ui.write(json.dumps(entries))
@@ -46,6 +58,7 @@ class CmdDiskUsage(CmdBaseNoRepo):
                     human_readable=self.args.human_readable,
                 )
                 ui.write("\n".join(entries))
+
             return 0
         except DvcException:
             logger.exception(f"failed to list '{self.args.url}'")
@@ -69,6 +82,12 @@ def add_parser(subparsers, parent_parser):
         "--recursive",
         action="store_true",
         help="Recursively list files.",
+    )
+    list_parser.add_argument(
+        "-s",
+        "--summarize",
+        action="store_true",
+        help="Display only a total disk usage.",
     )
     list_parser.add_argument(
         "-H",
