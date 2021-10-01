@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 from collections import Counter
@@ -52,19 +53,24 @@ class CmdDiskUsage(CmdList):
 
             if self.args.summarize:
                 sizes = [a["size"] for a in entries]
-                total_bytes = reduce(
+                total_size = reduce(
                     lambda a, b: a + b,
                     sizes,
                     0,
                 )
 
                 if self.args.human_readable:
-                    ui.write(convert_bytes(total_bytes))
+                    total_size = convert_bytes(total_size)
+
+                if self.args.show_json:
+                    ui.write(json.dumps({"total": total_size}))
                 else:
-                    ui.write(total_bytes)
+                    ui.write(total_size)
 
             elif self.args.show_json:
-                import json
+                if self.args.human_readable:
+                    for entry in entries:
+                        entry["size"] = convert_bytes(entry["size"])
 
                 ui.write(json.dumps(entries))
             elif entries:
