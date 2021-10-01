@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+from collections import Counter
 from functools import reduce
 
 from dvc.command import completion
@@ -17,22 +19,45 @@ class CmdDiskUsage(CmdList):
         from dvc.repo import Repo
 
         try:
-            recursive = True if self.args.summarize else self.args.recursive
             entries = Repo.ls(
                 self.args.url,
                 self.args.path,
                 rev=self.args.rev,
-                recursive=recursive,
+                recursive=True,
                 with_size=True,
                 dvc_only=self.args.dvc_only,
             )
 
+            if not self.args.recursive:
+                directory_sizes = Counter()
+                for e in entries:
+                    parts = os.path.normpath(e["path"]).split(os.sep)
+                    directory_sizes[parts[0]] += e["size"]
+
+                directory_sizes = sorted(
+                    directory_sizes.items(), key=lambda dir: dir[0]
+                )
+                entries = list(
+                    map(
+                        lambda dir: {
+                            "path": dir[0],
+                            "size": dir[1],
+                            "isdir": True,
+                            "isexec": False,
+                            "isout": False,
+                        },
+                        directory_sizes,
+                    )
+                )
+
             if self.args.summarize:
+                sizes = [a["size"] for a in entries]
                 total_bytes = reduce(
                     lambda a, b: a + b,
-                    list(map(lambda a: a["size"], entries)),
+                    sizes,
                     0,
                 )
+
                 if self.args.human_readable:
                     ui.write(convert_bytes(total_bytes))
                 else:

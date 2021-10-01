@@ -1,7 +1,10 @@
+import logging
 from itertools import chain
 
 from dvc.exceptions import PathMissingError
 from dvc.path_info import PathInfo
+
+logger = logging.getLogger(__name__)
 
 
 def ls(
@@ -84,9 +87,13 @@ def _ls(repo, path_info, recursive=None, dvc_only=False, with_size=False):
             }
 
             if with_size:
-                try:
-                    ret[path]["size"] = repo.repo_fs.getsize(path)
-                except FileNotFoundError:
-                    ret[path]["size"] = repo.dvcfs.info(info)["size"]
+                file_info = repo.repo_fs.info(info)
+                ret[path]["size"] = (
+                    file_info["size"] if "size" in file_info else -1
+                )
+
+                if ret[path]["size"] is None:
+                    logger.debug(f"None size detected in {info}")
+                    ret[path]["size"] = 0
 
     return ret
