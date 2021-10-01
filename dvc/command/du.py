@@ -16,6 +16,33 @@ logger = logging.getLogger(__name__)
 
 
 class CmdDiskUsage(CmdList):
+    def _calculate_total_per_directory(self, entries):
+        directory_sizes = Counter()
+        updated_entries = []
+        for e in entries:
+            parts = os.path.normpath(e["path"]).split(os.sep)
+
+            # Let root level entries that are not directories as is
+            if len(parts) == 1 and not e["isdir"]:
+                updated_entries.append(e)
+                continue
+
+            directory_sizes[parts[0]] += e["size"]
+
+        # Combine calculated directory entries and the root level file entries
+        for directory_item in directory_sizes.items():
+            updated_entries.append(
+                {
+                    "path": directory_item[0],
+                    "size": directory_item[1],
+                    "isdir": True,
+                    "isexec": False,
+                    "isout": False,
+                }
+            )
+
+        return sorted(updated_entries, key=lambda entry: entry["path"])
+
     def run(self):
         from dvc.repo import Repo
 
@@ -30,26 +57,7 @@ class CmdDiskUsage(CmdList):
             )
 
             if not self.args.recursive:
-                directory_sizes = Counter()
-                for e in entries:
-                    parts = os.path.normpath(e["path"]).split(os.sep)
-                    directory_sizes[parts[0]] += e["size"]
-
-                directory_sizes = sorted(
-                    directory_sizes.items(), key=lambda dir: dir[0]
-                )
-                entries = list(
-                    map(
-                        lambda dir: {
-                            "path": dir[0],
-                            "size": dir[1],
-                            "isdir": True,
-                            "isexec": False,
-                            "isout": False,
-                        },
-                        directory_sizes,
-                    )
-                )
+                entries = self._calculate_total_per_directory(entries)
 
             if self.args.summarize:
                 sizes = [a["size"] for a in entries]
