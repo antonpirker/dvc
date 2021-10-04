@@ -466,6 +466,13 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             from_info, to_file, callback=callback, **kwargs
         )
 
+    def du(self, path_info):
+        fs, dvc_fs = self._get_fs_pair(path_info)
+        try:
+            return fs.du(path_info)
+        except FileNotFoundError:
+            return dvc_fs.du(path_info)
+
     def metadata(self, path):
         abspath = os.path.abspath(path)
         path_info = PathInfo(abspath)

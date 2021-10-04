@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import OrderedDict
 
 from dvc.path_info import PathInfo
 from dvc.scheme import Schemes
@@ -171,3 +172,25 @@ class LocalFileSystem(BaseFileSystem):
         self, from_info, to_file, callback=DEFAULT_CALLBACK, **kwargs
     ):
         copyfile(from_info, to_file, callback=callback)
+
+    def du(self, path_info):
+        logger.debug(f"Entering local.du({path_info})")
+
+        def onerror(exc):
+            raise exc
+
+        directory_sizes = OrderedDict()
+
+        for root, dirs, files in self.walk(
+            path_info.fspath,
+            onerror=onerror,
+            dvcfiles=True,
+            topdown=False,
+        ):
+            size = sum(self.getsize(PathInfo(root) / f) for f in files)
+            subdir_size = sum(
+                directory_sizes[PathInfo(root) / d] for d in dirs
+            )
+            directory_sizes[PathInfo(root)] = size + subdir_size
+
+        return list(directory_sizes.items())

@@ -23,7 +23,9 @@ class CmdDiskUsage(CmdBaseNoRepo):
             )
 
             if entries:
-                ui.write("\n".join(entries))
+                ui.write(
+                    "\n".join([f"{entry[1]}\t{entry[0]}" for entry in entries])
+                )
 
             return 0
         except DvcException:

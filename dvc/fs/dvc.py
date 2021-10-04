@@ -10,6 +10,8 @@ from ..progress import DEFAULT_CALLBACK
 from ._metadata import Metadata
 from .base import BaseFileSystem
 
+logger = logging.getLogger(__name__)
+
 if typing.TYPE_CHECKING:
     from dvc.output import Output
 
@@ -271,3 +273,7 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         if md5:
             return md5
         raise NotImplementedError
+
+    def du(self, path_info):
+        logger.debug(f"Entering dvc.du({path_info})")
+        return [(path_info, self.info(path_info)["size"])]
