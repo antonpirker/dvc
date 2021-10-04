@@ -10,7 +10,7 @@ from funcy import lfilter, wrap_with
 from dvc.path_info import PathInfo
 
 from ..progress import DEFAULT_CALLBACK
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
 from .dvc import DvcFileSystem
 
 if TYPE_CHECKING:
@@ -466,13 +466,6 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             from_info, to_file, callback=callback, **kwargs
         )
 
-    def du(self, path_info):
-        fs, dvc_fs = self._get_fs_pair(path_info)
-        try:
-            return fs.du(path_info)
-        except FileNotFoundError:
-            return dvc_fs.du(path_info)
-
     def metadata(self, path):
         abspath = os.path.abspath(path)
         path_info = PathInfo(abspath)
@@ -521,3 +514,10 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             return fs.checksum(path_info)
         except FileNotFoundError:
             return dvc_fs.checksum(path_info)
+
+    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+        fs, dvc_fs = self._get_fs_pair(path_info)
+        try:
+            return fs.du(path_info)
+        except FileNotFoundError:
+            return dvc_fs.du(path_info) if dvc_fs else []

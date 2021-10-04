@@ -8,7 +8,7 @@ from dvc.utils import relpath
 
 from ..progress import DEFAULT_CALLBACK
 from ._metadata import Metadata
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +274,6 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             return md5
         raise NotImplementedError
 
-    def du(self, path_info):
+    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
         logger.debug(f"Entering dvc.du({path_info})")
         return [(path_info, self.info(path_info)["size"])]

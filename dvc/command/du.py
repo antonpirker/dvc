@@ -18,8 +18,6 @@ class CmdDiskUsage(CmdBaseNoRepo):
                 self.args.url,
                 self.args.path,
                 rev=self.args.rev,
-                recursive=self.args.recursive,
-                dvc_only=self.args.dvc_only,
             )
 
             if entries:
@@ -59,9 +57,6 @@ def add_parser(subparsers, parent_parser):
         "--human-readable",
         action="store_true",
         help="Output disk sizes in humand readable form (like MB, GB, ..).",
-    )
-    disk_usage_parser.add_argument(
-        "--dvc-only", action="store_true", help="Show only DVC outputs."
     )
     disk_usage_parser.add_argument(
         "--rev",

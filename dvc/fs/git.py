@@ -9,7 +9,7 @@ from dvc.path_info import PathInfo
 from dvc.utils import is_exec, relpath
 
 from ..progress import DEFAULT_CALLBACK
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
 
 logger = logging.getLogger(__name__)
 
@@ -140,14 +140,13 @@ class GitFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
                 )
                 shutil.copyfileobj(wrapped, to_fobj)
 
-    def du(self, path_info):
+    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
         logger.debug(f"Entering git.du({path_info})")
 
         def onerror(exc):
             raise exc
 
-        directory_sizes = OrderedDict()
-
+        directory_sizes: OrderedDict[PathInfo, int] = OrderedDict()
         for root, dirs, files in self.walk(
             path_info.fspath,
             onerror=onerror,
