@@ -174,6 +174,9 @@ class LocalFileSystem(BaseFileSystem):
         copyfile(from_info, to_file, callback=callback)
 
     def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+        """
+        Calculates the disk usage all directories in the local file system
+        """
         logger.debug(f"Entering local.du({path_info})")
 
         def onerror(exc):

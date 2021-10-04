@@ -1,6 +1,7 @@
 import logging
 import os
 import typing
+from collections import Counter
 
 from dvc.exceptions import OutputNotFoundError
 from dvc.path_info import PathInfo
@@ -275,5 +276,28 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         raise NotImplementedError
 
     def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+        """
+        Calculates the disk usage all directories in DVC
+        """
         logger.debug(f"Entering dvc.du({path_info})")
-        return [(path_info, self.info(path_info)["size"])]
+
+        def onerror(exc):
+            raise exc
+
+        directory_sizes: Counter[PathInfo] = Counter()
+
+        for root, dirs, _files in self.walk(
+            path_info,
+            onerror=onerror,
+            topdown=True,
+        ):
+            size = self.getsize(PathInfo(root)) or 0
+            subdir_size = sum(
+                self.getsize(PathInfo(root) / d) or 0 for d in dirs
+            )
+            directory_sizes[PathInfo(root)] = size + subdir_size
+
+        directory_sizes_list = list(directory_sizes.items())[
+            ::-1
+        ]  # reverse to have bottom up sort order.
+        return directory_sizes_list
