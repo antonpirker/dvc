@@ -140,7 +140,9 @@ class GitFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
                 )
                 shutil.copyfileobj(wrapped, to_fobj)
 
-    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> list[DiskUsageEntry]:
         """
         Calculates the disk usage all directories in the Git repository
         """

@@ -387,5 +387,5 @@ class BaseFileSystem:
 
         move(tmp_file, to_info)
 
-    def du(self, path_info: PathInfo):
+    def du(self, path_info: PathInfo, total=True, maxdepth=None):
         raise NotImplementedError

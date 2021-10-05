@@ -173,7 +173,9 @@ class LocalFileSystem(BaseFileSystem):
     ):
         copyfile(from_info, to_file, callback=callback)
 
-    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> list[DiskUsageEntry]:
         """
         Calculates the disk usage all directories in the local file system
         """

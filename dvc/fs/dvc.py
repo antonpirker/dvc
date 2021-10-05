@@ -275,7 +275,9 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             return md5
         raise NotImplementedError
 
-    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> list[DiskUsageEntry]:
         """
         Calculates the disk usage all directories in DVC
         """

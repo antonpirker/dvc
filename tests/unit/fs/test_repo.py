@@ -68,23 +68,6 @@ def test_open_in_history(tmp_dir, scm, dvc):
             assert fobj.read() == "foo"
 
 
-def test_du(tmp_dir, dvc):
-    tmp_dir.dvc_gen("data/data.csv", "one;two;three\n")
-
-    fs = RepoFileSystem(repo=dvc)
-    root = PathInfo(tmp_dir)
-    result = fs.du(root)
-
-    first_entry = result[0]
-    assert str(first_entry[0]) == "data"
-
-    # expected size of 'data' directory:
-    # data/data.csv: 14 bytes
-    # data/data.csv.dvc: 74 bytes
-    # total: 88 bytes
-    assert first_entry[1] == 88
-
-
 def test_isdir_isfile(tmp_dir, dvc):
     tmp_dir.gen(
         {

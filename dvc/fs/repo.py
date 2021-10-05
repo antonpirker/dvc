@@ -516,7 +516,9 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         except FileNotFoundError:
             return dvc_fs.checksum(path_info)
 
-    def du(self, path_info: PathInfo) -> list[DiskUsageEntry]:
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> list[DiskUsageEntry]:
         """
         Calculates the disk usage of all directories in the repo *AND* in DVC
         """
