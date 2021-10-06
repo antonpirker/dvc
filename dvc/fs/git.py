@@ -148,6 +148,9 @@ class GitFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         """
         logger.debug(f"Entering git.du({path_info})")
 
+        if self.isfile(path_info):
+            return [(path_info, self.getsize(path_info))]
+
         def onerror(exc):
             raise exc
 
