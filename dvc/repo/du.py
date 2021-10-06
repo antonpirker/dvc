@@ -1,7 +1,7 @@
 from dvc.path_info import PathInfo
 
 
-def du(url, path=None, rev=None):
+def du(url, path=None, rev=None, total=False):
     """Methods for getting (estimated) disk usage of directories and files.
 
     Args:
@@ -22,7 +22,7 @@ def du(url, path=None, rev=None):
         if path:
             path_info /= path
 
-        disk_usage = repo.repo_fs.du(path_info)
+        disk_usage = repo.repo_fs.du(path_info, total=total)
 
         # NOTE: I know adding a " ." and then stripping the whitespace
         #   with [1:] is a little hackish, but it works and makes the

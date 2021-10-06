@@ -17,8 +17,13 @@ class CmdDiskUsage(CmdBaseNoRepo):
             entries = Repo.du(
                 self.args.url,
                 self.args.path,
+                total=self.args.summarize,
                 rev=self.args.rev,
             )
+
+            if self.args.summarize:
+                ui.write(entries[0][1])
+                return 0
 
             if entries:
                 ui.write(
@@ -57,6 +62,12 @@ def add_parser(subparsers, parent_parser):
         "--human-readable",
         action="store_true",
         help="Output disk sizes in humand readable form (like MB, GB, ..).",
+    )
+    disk_usage_parser.add_argument(
+        "-s",
+        "--summarize",
+        action="store_true",
+        help="Only output the overall total.",
     )
     disk_usage_parser.add_argument(
         "--rev",

@@ -525,12 +525,16 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         logger.debug(f"Entering repo.du({path_info})")
         fs, dvc_fs = self._get_fs_pair(path_info)
         try:
-            fs_usage = fs.du(path_info)
+            fs_usage = fs.du(path_info, total=total, maxdepth=maxdepth)
         except FileNotFoundError:
             fs_usage = []
 
         try:
-            dvc_usage = dvc_fs.du(path_info) if dvc_fs else []
+            dvc_usage = (
+                dvc_fs.du(path_info, total=total, maxdepth=maxdepth)
+                if dvc_fs
+                else []
+            )
         except FileNotFoundError:
             dvc_usage = []
 
