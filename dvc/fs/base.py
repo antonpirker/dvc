@@ -4,18 +4,21 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partialmethod
 from multiprocessing import cpu_count
-from typing import Any, ClassVar, Dict, FrozenSet, Optional
+from typing import Any, ClassVar, Dict, FrozenSet, Optional, Tuple
 
 from tqdm.utils import CallbackIOWrapper
 
 from dvc.exceptions import DvcException
-from dvc.path_info import URLInfo
+from dvc.path_info import PathInfo, URLInfo
 from dvc.progress import DEFAULT_CALLBACK, FsspecCallback
 from dvc.ui import ui
 from dvc.utils import tmp_fname
 from dvc.utils.fs import makedirs, move
 
 logger = logging.getLogger(__name__)
+
+
+DiskUsageEntry = Tuple[PathInfo, int]
 
 
 class RemoteCmdError(DvcException):
@@ -383,3 +386,6 @@ class BaseFileSystem:
             raise
 
         move(tmp_file, to_info)
+
+    def du(self, path_info: PathInfo, total=True, maxdepth=None):
+        raise NotImplementedError

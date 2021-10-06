@@ -1,6 +1,7 @@
 import logging
 import os
 import typing
+from collections import Counter
 
 from dvc.exceptions import OutputNotFoundError
 from dvc.path_info import PathInfo
@@ -8,7 +9,9 @@ from dvc.utils import relpath
 
 from ..progress import DEFAULT_CALLBACK
 from ._metadata import Metadata
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
+
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from dvc.output import Output
@@ -271,3 +274,54 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         if md5:
             return md5
         raise NotImplementedError
+
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> list[DiskUsageEntry]:
+        """
+        Calculates the disk usage all directories in DVC
+        """
+        logger.debug(f"Entering dvc.du({path_info})")
+
+        if self.isfile(path_info):
+            return [(path_info, self.getsize(path_info))]
+
+        def onerror(exc):
+            raise exc
+
+        directory_sizes: Counter[PathInfo] = Counter()
+
+        for root, dirs, files in self.walk(
+            path_info,
+            onerror=onerror,
+            topdown=True,
+        ):
+            size = self.getsize(PathInfo(root)) or 0
+            files_size = sum(
+                self.getsize(PathInfo(root) / f) or 0 for f in files
+            )
+            subdir_size = sum(
+                self.getsize(PathInfo(root) / d) or 0 for d in dirs
+            )
+            directory_sizes[PathInfo(root)] += size + files_size + subdir_size
+
+        # calculate the total size of the root level.
+        root_level_total = 0
+        for item in list(directory_sizes.items()):
+            parts = (
+                str(item[0].path)
+                .replace(str(path_info.path), "")
+                .split(os.sep)
+            )
+            if len(parts) == 2:
+                root_level_total += item[1]
+
+        if total:
+            return [(path_info, root_level_total)]
+
+        directory_sizes[path_info] = root_level_total
+        directory_sizes_list = list(directory_sizes.items())[
+            ::-1
+        ]  # reverse to have bottom up sort order.
+
+        return directory_sizes_list

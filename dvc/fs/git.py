@@ -1,12 +1,17 @@
 import errno
+import logging
 import os
+from collections import OrderedDict
 
 from tqdm.utils import CallbackIOWrapper
 
+from dvc.path_info import PathInfo
 from dvc.utils import is_exec, relpath
 
 from ..progress import DEFAULT_CALLBACK
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
+
+logger = logging.getLogger(__name__)
 
 
 class GitFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
@@ -134,3 +139,34 @@ class GitFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
                     callback.relative_update, from_fobj
                 )
                 shutil.copyfileobj(wrapped, to_fobj)
+
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> list[DiskUsageEntry]:
+        """
+        Calculates the disk usage all directories in the Git repository
+        """
+        logger.debug(f"Entering git.du({path_info})")
+
+        if self.isfile(path_info):
+            return [(path_info, self.getsize(path_info))]
+
+        def onerror(exc):
+            raise exc
+
+        directory_sizes: OrderedDict[PathInfo, int] = OrderedDict()
+        for root, dirs, files in self.walk(
+            path_info.fspath,
+            onerror=onerror,
+            dvcfiles=True,
+            topdown=False,
+        ):
+            size = sum(self.getsize(PathInfo(root) / f) for f in files)
+            subdir_size = sum(
+                directory_sizes[PathInfo(root) / d] for d in dirs
+            )
+            directory_sizes[PathInfo(root)] = size + subdir_size
+
+        if total:
+            return [(path_info, directory_sizes[path_info])]
+        return list(directory_sizes.items())

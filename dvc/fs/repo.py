@@ -1,8 +1,9 @@
 import logging
 import os
 import threading
+from collections import Counter
 from contextlib import suppress
-from itertools import takewhile
+from itertools import chain, takewhile
 from typing import TYPE_CHECKING, Callable, Optional, Tuple, Type, Union
 
 from funcy import lfilter, wrap_with
@@ -10,7 +11,7 @@ from funcy import lfilter, wrap_with
 from dvc.path_info import PathInfo
 
 from ..progress import DEFAULT_CALLBACK
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
 from .dvc import DvcFileSystem
 
 if TYPE_CHECKING:
@@ -514,3 +515,33 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             return fs.checksum(path_info)
         except FileNotFoundError:
             return dvc_fs.checksum(path_info)
+
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> Union[list[DiskUsageEntry], int]:
+        """
+        Calculates the disk usage of all directories in the repo *AND* in DVC
+        """
+        logger.debug(f"Entering repo.du({path_info})")
+        fs, dvc_fs = self._get_fs_pair(path_info)
+        try:
+            fs_usage = fs.du(path_info, total=total, maxdepth=maxdepth)
+        except FileNotFoundError:
+            fs_usage = []
+
+        try:
+            dvc_usage = (
+                dvc_fs.du(path_info, total=total, maxdepth=maxdepth)
+                if dvc_fs
+                else []
+            )
+        except FileNotFoundError:
+            dvc_usage = []
+
+        usage: Counter[PathInfo] = Counter()
+        for item in chain(fs_usage, dvc_usage):
+            usage[item[0]] += item[1]
+
+        directory_sizes = list(usage.items())
+        directory_sizes.sort(key=lambda x: x[0], reverse=True)
+        return directory_sizes

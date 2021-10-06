@@ -1,5 +1,7 @@
 import logging
 import os
+from collections import OrderedDict
+from typing import Union
 
 from dvc.path_info import PathInfo
 from dvc.scheme import Schemes
@@ -8,7 +10,7 @@ from dvc.utils import is_exec, tmp_fname
 from dvc.utils.fs import copy_fobj_to_file, copyfile, makedirs, move, remove
 
 from ..progress import DEFAULT_CALLBACK
-from .base import BaseFileSystem
+from .base import BaseFileSystem, DiskUsageEntry
 
 logger = logging.getLogger(__name__)
 
@@ -171,3 +173,39 @@ class LocalFileSystem(BaseFileSystem):
         self, from_info, to_file, callback=DEFAULT_CALLBACK, **kwargs
     ):
         copyfile(from_info, to_file, callback=callback)
+
+    def du(
+        self, path_info: PathInfo, total=True, maxdepth=None
+    ) -> Union[list[DiskUsageEntry], int]:
+        """
+        Calculates the disk usage all directories in the local file system
+        """
+        logger.debug(f"Entering local.du({path_info})")
+
+        if self.isfile(path_info):
+            return [(path_info, self.getsize(path_info))]
+
+        def onerror(exc):
+            raise exc
+
+        directory_sizes: OrderedDict[PathInfo, int] = OrderedDict()
+
+        for root, dirs, files in self.walk(
+            path_info.fspath,
+            onerror=onerror,
+            dvcfiles=True,
+            topdown=False,
+        ):
+            size = sum(self.getsize(PathInfo(root) / f) for f in files)
+            subdir_size = sum(
+                directory_sizes[PathInfo(root) / d] for d in sorted(dirs)
+            )
+            import sys
+
+            sys.stdout.write(f"\n* {str(PathInfo(root))}")
+            directory_sizes[PathInfo(root)] = size + subdir_size
+
+        if total:
+            return [(path_info, directory_sizes[path_info])]
+
+        return list(directory_sizes.items())
