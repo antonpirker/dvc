@@ -184,6 +184,9 @@ class LocalFileSystem(BaseFileSystem):
         def onerror(exc):
             raise exc
 
+        if self.isfile(path_info):
+            return [(path_info, self.getsize(path_info))]
+
         directory_sizes: OrderedDict[PathInfo, int] = OrderedDict()
 
         for root, dirs, files in self.walk(
@@ -194,8 +197,11 @@ class LocalFileSystem(BaseFileSystem):
         ):
             size = sum(self.getsize(PathInfo(root) / f) for f in files)
             subdir_size = sum(
-                directory_sizes[PathInfo(root) / d] for d in dirs
+                directory_sizes[PathInfo(root) / d] for d in sorted(dirs)
             )
+            import sys
+
+            sys.stdout.write(f"\n* {str(PathInfo(root))}")
             directory_sizes[PathInfo(root)] = size + subdir_size
 
         return list(directory_sizes.items())

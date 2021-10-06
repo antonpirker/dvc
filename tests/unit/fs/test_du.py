@@ -1,13 +1,13 @@
+import os
+import sys
+
 import pytest
 
-from dvc.fs.repo import RepoFileSystem
+from dvc.fs.local import LocalFileSystem
 from dvc.path_info import PathInfo
 
 
 def _print_dir(path):
-    import os
-    import sys
-
     for root, dirs, files in os.walk(str(path)):
         sys.stderr.write(f"\n{root}")
         for d in dirs:
@@ -20,19 +20,44 @@ def _print_dir(path):
 
 NAME = 0
 SIZE = 1
-RESULT_IDX = 2
-EXPECTED_RESULTS = {
-    # {total}-{maxdepth}-{subdir}
-    "False-None-": ("data", 39, 3),
-    "False-None-data": ("data", 39, 0),
-    "False-None-data/data-b.json": ("data/data-b.json", 22),
+
+
+def _run_test(tmp_dir, fs, subdir, total, maxdepth, expected_results):
+    root = PathInfo(tmp_dir)
+    du_result = fs.du(root / subdir, total=total, maxdepth=maxdepth)
+    sys.stderr.write(str(du_result))
+
+    expected = expected_results[f"{total}-{maxdepth}-{subdir}"]
+    result = du_result[expected["result_index"]]
+
+    assert str(result[NAME]) == expected["name"]
+    assert result[SIZE] == expected["size"]
+
+
+# Key is: {total}-{maxdepth}-{subdir}
+EXPECTED_RESULTS_LOCAL_FS = {
+    "False-None-": {
+        "name": ".",
+        "size": 145977,
+        "result_index": -1,
+    },
+    "False-None-experiments": {
+        "name": "experiments",
+        "size": 34,
+        "result_index": -1,
+    },
+    "False-None-data/data-b.json": {
+        "name": "data/data-b.json",
+        "size": 22,
+        "result_index": 0,
+    },
 }
 
 
-@pytest.mark.parametrize("subdir", ["", "data", "data/data-b.json"])
+@pytest.mark.parametrize("subdir", ["", "experiments", "data/data-b.json"])
 @pytest.mark.parametrize("maxdepth", [None])
 @pytest.mark.parametrize("total", [False])
-def test_du(tmp_dir, dvc, total, maxdepth, subdir):
+def test_local_fs_du(tmp_dir, dvc, total, maxdepth, subdir):
     tmp_dir.gen(
         {  # 73 bytes
             "data": {  # 39 bytes
@@ -50,16 +75,5 @@ def test_du(tmp_dir, dvc, total, maxdepth, subdir):
     )
     _print_dir(tmp_dir)
 
-    fs = RepoFileSystem(repo=dvc)
-    root = PathInfo(tmp_dir)
-    du_result = fs.du(root / subdir, total=total, maxdepth=maxdepth)
-
-    import sys
-
-    sys.stderr.write(str(du_result))
-
-    expected = EXPECTED_RESULTS[f"{total}-{maxdepth}-{subdir}"]
-    result = du_result[expected[RESULT_IDX]]
-
-    assert str(result[NAME]) == expected[NAME]
-    assert result[SIZE] == expected[SIZE]
+    fs = LocalFileSystem(repo=dvc)
+    _run_test(tmp_dir, fs, subdir, total, maxdepth, EXPECTED_RESULTS_LOCAL_FS)
