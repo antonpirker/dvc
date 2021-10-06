@@ -167,4 +167,6 @@ class GitFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             )
             directory_sizes[PathInfo(root)] = size + subdir_size
 
+        if total:
+            return [(path_info, directory_sizes[path_info])]
         return list(directory_sizes.items())

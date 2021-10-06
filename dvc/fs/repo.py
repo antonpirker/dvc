@@ -518,7 +518,7 @@ class RepoFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
 
     def du(
         self, path_info: PathInfo, total=True, maxdepth=None
-    ) -> list[DiskUsageEntry]:
+    ) -> Union[list[DiskUsageEntry], int]:
         """
         Calculates the disk usage of all directories in the repo *AND* in DVC
         """

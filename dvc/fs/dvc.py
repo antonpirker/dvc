@@ -306,7 +306,7 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
             directory_sizes[PathInfo(root)] += size + files_size + subdir_size
 
         # calculate the total size of the root level.
-        total = 0
+        root_level_total = 0
         for item in list(directory_sizes.items()):
             parts = (
                 str(item[0].path)
@@ -314,9 +314,12 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
                 .split(os.sep)
             )
             if len(parts) == 2:
-                total += item[1]
+                root_level_total += item[1]
 
-        directory_sizes[path_info] = total
+        if total:
+            return [(path_info, root_level_total)]
+
+        directory_sizes[path_info] = root_level_total
         directory_sizes_list = list(directory_sizes.items())[
             ::-1
         ]  # reverse to have bottom up sort order.

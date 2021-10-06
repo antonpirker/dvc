@@ -34,6 +34,9 @@ def _run_test(tmp_dir, fs, subdir, total, maxdepth, expected_results):
     assert str(result[NAME]) == expected["name"]
     assert result[SIZE] == expected["size"]
 
+    if total:
+        assert len(du_result) == 1
+
 
 # Key is: {total}-{maxdepth}-{subdir}
 EXPECTED_RESULTS_LOCAL = {
@@ -52,12 +55,27 @@ EXPECTED_RESULTS_LOCAL = {
         "size": 22,
         "result_index": 0,
     },
+    "True-None-": {
+        "name": ".",
+        "size": 145977,
+        "result_index": 0,
+    },
+    "True-None-experiments": {
+        "name": "experiments",
+        "size": 34,
+        "result_index": 0,
+    },
+    "True-None-data/data-b.json": {
+        "name": "data/data-b.json",
+        "size": 22,
+        "result_index": 0,
+    },
 }
 
 
 @pytest.mark.parametrize("subdir", ["", "experiments", "data/data-b.json"])
 @pytest.mark.parametrize("maxdepth", [None])
-@pytest.mark.parametrize("total", [False])
+@pytest.mark.parametrize("total", [False, True])
 def test_local_fs_du(tmp_dir, dvc, total, maxdepth, subdir):
     tmp_dir.gen(
         {  # 73 bytes
@@ -97,12 +115,27 @@ EXPECTED_RESULTS_DVC = {
         "size": 22,
         "result_index": 0,
     },
+    "True-None-": {
+        "name": ".",
+        "size": 56,
+        "result_index": 0,
+    },
+    "True-None-experiments": {
+        "name": "experiments",
+        "size": 34,
+        "result_index": 0,
+    },
+    "True-None-data/data-b.json": {
+        "name": "data/data-b.json",
+        "size": 22,
+        "result_index": 0,
+    },
 }
 
 
 @pytest.mark.parametrize("subdir", ["", "experiments", "data/data-b.json"])
 @pytest.mark.parametrize("maxdepth", [None])
-@pytest.mark.parametrize("total", [False])
+@pytest.mark.parametrize("total", [False, True])
 def test_dvc_fs_du(tmp_dir, dvc, total, maxdepth, subdir):
     tmp_dir.gen(
         {  # 56 bytes
@@ -145,12 +178,27 @@ EXPECTED_RESULTS_GIT = {
         "size": 22,
         "result_index": 0,
     },
+    "True-None-": {
+        "name": ".",
+        "size": 14906,
+        "result_index": 0,
+    },
+    "True-None-experiments": {
+        "name": "experiments",
+        "size": 34,
+        "result_index": 0,
+    },
+    "True-None-data/data-b.json": {
+        "name": "data/data-b.json",
+        "size": 22,
+        "result_index": 0,
+    },
 }
 
 
 @pytest.mark.parametrize("subdir", ["", "experiments", "data/data-b.json"])
 @pytest.mark.parametrize("maxdepth", [None])
-@pytest.mark.parametrize("total", [False])
+@pytest.mark.parametrize("total", [False, True])
 def test_git_fs_du(tmp_dir, scm, dvc, total, maxdepth, subdir):
     tmp_dir.scm_gen(
         {  # 56 bytes

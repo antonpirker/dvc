@@ -1,6 +1,7 @@
 import logging
 import os
 from collections import OrderedDict
+from typing import Union
 
 from dvc.path_info import PathInfo
 from dvc.scheme import Schemes
@@ -175,7 +176,7 @@ class LocalFileSystem(BaseFileSystem):
 
     def du(
         self, path_info: PathInfo, total=True, maxdepth=None
-    ) -> list[DiskUsageEntry]:
+    ) -> Union[list[DiskUsageEntry], int]:
         """
         Calculates the disk usage all directories in the local file system
         """
@@ -203,5 +204,8 @@ class LocalFileSystem(BaseFileSystem):
 
             sys.stdout.write(f"\n* {str(PathInfo(root))}")
             directory_sizes[PathInfo(root)] = size + subdir_size
+
+        if total:
+            return [(path_info, directory_sizes[path_info])]
 
         return list(directory_sizes.items())
