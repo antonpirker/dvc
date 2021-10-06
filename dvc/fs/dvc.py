@@ -283,23 +283,42 @@ class DvcFileSystem(BaseFileSystem):  # pylint:disable=abstract-method
         """
         logger.debug(f"Entering dvc.du({path_info})")
 
+        if self.isfile(path_info):
+            return [(path_info, self.getsize(path_info))]
+
         def onerror(exc):
             raise exc
 
         directory_sizes: Counter[PathInfo] = Counter()
 
-        for root, dirs, _files in self.walk(
+        for root, dirs, files in self.walk(
             path_info,
             onerror=onerror,
             topdown=True,
         ):
             size = self.getsize(PathInfo(root)) or 0
+            files_size = sum(
+                self.getsize(PathInfo(root) / f) or 0 for f in files
+            )
             subdir_size = sum(
                 self.getsize(PathInfo(root) / d) or 0 for d in dirs
             )
-            directory_sizes[PathInfo(root)] = size + subdir_size
+            directory_sizes[PathInfo(root)] += size + files_size + subdir_size
 
+        # calculate the total size of the root level.
+        total = 0
+        for item in list(directory_sizes.items()):
+            parts = (
+                str(item[0].path)
+                .replace(str(path_info.path), "")
+                .split(os.sep)
+            )
+            if len(parts) == 2:
+                total += item[1]
+
+        directory_sizes[path_info] = total
         directory_sizes_list = list(directory_sizes.items())[
             ::-1
         ]  # reverse to have bottom up sort order.
+
         return directory_sizes_list

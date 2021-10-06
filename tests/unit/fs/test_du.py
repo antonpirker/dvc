@@ -3,6 +3,7 @@ import sys
 
 import pytest
 
+from dvc.fs.dvc import DvcFileSystem
 from dvc.fs.local import LocalFileSystem
 from dvc.path_info import PathInfo
 
@@ -16,6 +17,45 @@ def _print_dir(path):
             sys.stderr.write(f"\n~ {d}")
 
     sys.stderr.writelines(["\n", "\n"])
+
+
+# Key is: {total}-{maxdepth}-{subdir}
+EXPECTED_RESULTS = {
+    "local": {
+        "False-None-": {
+            "name": ".",
+            "size": 145977,
+            "result_index": -1,
+        },
+        "False-None-experiments": {
+            "name": "experiments",
+            "size": 34,
+            "result_index": -1,
+        },
+        "False-None-data/data-b.json": {
+            "name": "data/data-b.json",
+            "size": 22,
+            "result_index": 0,
+        },
+    },
+    "dvc": {
+        "False-None-": {
+            "name": ".",
+            "size": 56,
+            "result_index": -1,
+        },
+        "False-None-experiments": {
+            "name": "experiments",
+            "size": 34,
+            "result_index": -1,
+        },
+        "False-None-data/data-b.json": {
+            "name": "data/data-b.json",
+            "size": 22,
+            "result_index": 0,
+        },
+    },
+}
 
 
 NAME = 0
@@ -32,26 +72,6 @@ def _run_test(tmp_dir, fs, subdir, total, maxdepth, expected_results):
 
     assert str(result[NAME]) == expected["name"]
     assert result[SIZE] == expected["size"]
-
-
-# Key is: {total}-{maxdepth}-{subdir}
-EXPECTED_RESULTS_LOCAL_FS = {
-    "False-None-": {
-        "name": ".",
-        "size": 145977,
-        "result_index": -1,
-    },
-    "False-None-experiments": {
-        "name": "experiments",
-        "size": 34,
-        "result_index": -1,
-    },
-    "False-None-data/data-b.json": {
-        "name": "data/data-b.json",
-        "size": 22,
-        "result_index": 0,
-    },
-}
 
 
 @pytest.mark.parametrize("subdir", ["", "experiments", "data/data-b.json"])
@@ -76,4 +96,32 @@ def test_local_fs_du(tmp_dir, dvc, total, maxdepth, subdir):
     _print_dir(tmp_dir)
 
     fs = LocalFileSystem(repo=dvc)
-    _run_test(tmp_dir, fs, subdir, total, maxdepth, EXPECTED_RESULTS_LOCAL_FS)
+    _run_test(tmp_dir, fs, subdir, total, maxdepth, EXPECTED_RESULTS["local"])
+
+
+@pytest.mark.parametrize("subdir", ["", "experiments", "data/data-b.json"])
+@pytest.mark.parametrize("maxdepth", [None])
+@pytest.mark.parametrize("total", [False])
+def test_dvc_fs_du(tmp_dir, dvc, total, maxdepth, subdir):
+    tmp_dir.gen(
+        {  # 56 bytes
+            "data": {  # 22 bytes
+                "data-a.json": '{"some": "data"}\n',  # 0 bytes (not in dvc)
+                "data-b.json": '{"some_more": "data"}\n',  # 22 bytes
+            },
+            "experiments": {  # 34 bytes
+                "experiment-a": {  # 34 bytes
+                    "datafile-1.csv": "one;two;three\n",  # 14 bytes
+                    "datafile-2.csv": "four;five;six;seven\n",  # 20 bytes
+                },
+                "experiment-b": {},  # 0 bytes
+            },
+        }
+    )
+    dvc.add("data/data-b.json")
+    dvc.add("experiments/experiment-a")
+
+    _print_dir(tmp_dir)
+
+    fs = DvcFileSystem(repo=dvc)
+    _run_test(tmp_dir, fs, subdir, total, maxdepth, EXPECTED_RESULTS["dvc"])

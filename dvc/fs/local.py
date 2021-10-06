@@ -181,11 +181,11 @@ class LocalFileSystem(BaseFileSystem):
         """
         logger.debug(f"Entering local.du({path_info})")
 
-        def onerror(exc):
-            raise exc
-
         if self.isfile(path_info):
             return [(path_info, self.getsize(path_info))]
+
+        def onerror(exc):
+            raise exc
 
         directory_sizes: OrderedDict[PathInfo, int] = OrderedDict()
 
